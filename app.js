@@ -46,8 +46,8 @@
   }
 
   // Print at the cursor a few characters per frame, for that 1 MHz feel.
-  async function print(str, color = scr.color, perFrame = 4) {
-    str = fold(str);
+  async function print(str, color = scr.color, perFrame = 4, keepCase = false) {
+    str = fold(str, keepCase);
     for (let i = 0; i < str.length; i++) {
       scr.printChar(str[i], color);
       if (!hurry && i % perFrame === perFrame - 1) await frame();
@@ -113,10 +113,10 @@
     scr.text(x, y, t, color);
   }
 
-  function wrap(text, width = 38) {
+  function wrap(text, width = 38, keepCase = false) {
     const out = [];
     let line = '';
-    for (const word of fold(text).split(/\s+/).filter(Boolean)) {
+    for (const word of fold(text, keepCase).split(/\s+/).filter(Boolean)) {
       if (line && line.length + 1 + word.length > width) { out.push(line); line = word; }
       else line = line ? line + ' ' + word : word;
     }
@@ -196,7 +196,7 @@
     scr.color = C.LBLUE;
     scr.cls();
     titleBar('**** I-CHING 64 · BOOK OF CHANGES ****');
-    centered(20, 21, 'TEXTS ADAPTED FROM', C.GREY);
+    centered(20, 21, '(C) MAURO BOFFARDI, TEXTS ADAPTED FROM', C.GREY);
     centered(20, 22, "THE I CHING: A BEGINNER'S GUIDE", C.GREY);
     centered(20, 23, 'BY GAVIN · YOURICHING.COM', C.GREY);
     scr.locate(0, 3);
@@ -247,7 +247,7 @@
   }
 
   function para(lines, text, color) {
-    wrap(text).forEach(t => lines.push({ t, c: color }));
+    wrap(text, 38, true).forEach(t => lines.push({ t, c: color }));
     lines.push({ t: '' });
   }
 
@@ -270,9 +270,9 @@
   function hexagramText(lines, hex) {
     para(lines, hex.sum, C.WHITE);
     lines.push(heading('THE JUDGMENT'));
-    para(lines, hex.judg, C.LGREY);
+    para(lines, hex.judg, C.LBLUE);
     lines.push(heading('THE IMAGE'));
-    para(lines, hex.img, C.LGREY);
+    para(lines, hex.img, C.LBLUE);
   }
 
   function buildPages(reading) {
@@ -287,11 +287,11 @@
         if (!isMoving(v)) return;
         lines.push(heading(`LINE ${i + 1} · ${POSITIONS[i]} · ${v} ${LINE_NAMES[v]}`));
         para(lines, from.lines[i].t, C.YELLOW);
-        para(lines, from.lines[i].x, C.LGREY);
+        para(lines, from.lines[i].x, C.LBLUE);
       });
       if (values.every(isMoving) && from.all) {
         lines.push(heading('ALL SIX LINES MOVING'));
-        para(lines, from.all, C.LGREY);
+        para(lines, from.all, C.LBLUE);
       }
       pages.push(...paginate('MOVING LINES', lines));
       lines = [];
@@ -310,7 +310,7 @@
       for (let i = 0; i < page.lines.length; i++) {
         const l = page.lines[i];
         scr.locate(1, 2 + i);
-        if (l.t) await print(l.t, l.c, 6);
+        if (l.t) await print(l.t, l.c, 6, true);
       }
       scr.text(1, 24, 'PRESS RETURN', C.GREY);
       scr.locate(14, 24);

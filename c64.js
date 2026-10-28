@@ -35,6 +35,16 @@
     '3': '3C66061C06663C00', '4': '060E1E667F060600', '5': '7E607C0606663C00',
     '6': '3C66607C66663C00', '7': '7E660C1818181800', '8': '3C66663C66663C00',
     '9': '3C66663E06663C00',
+    // lower case, as in the C64's second (upper/lower case) character set
+    'a': '00003C063E663E00', 'b': '0060607C66667C00', 'c': '00003C6060603C00',
+    'd': '0006063E66663E00', 'e': '00003C667E603C00', 'f': '000E183E18181800',
+    'g': '00003E66663E067C', 'h': '0060607C66666600', 'i': '0018003818183C00',
+    'j': '000600060606063C', 'k': '0060606C786C6600', 'l': '0038181818183C00',
+    'm': '0000667F7F6B6300', 'n': '00007C6666666600', 'o': '00003C6666663C00',
+    'p': '00007C66667C6060', 'q': '00003E66663E0606', 'r': '00007C6660606000',
+    's': '00003E603C067C00', 't': '00187E1818180E00', 'u': '0000666666663E00',
+    'v': '00006666663C1800', 'w': '0000636B7F3E3600', 'x': '0000663C183C6600',
+    'y': '00006666663E0C78', 'z': '00007E0C18307E00',
     '.': '0000000000181800', ',': '0000000000181830', ':': '0000180000180000',
     ';': '0000180000181830', '!': '1818181800001800', '?': '3C66060C18001800',
     "'": '060C180000000000', '"': '6666660000000000', '-': '0000007E00000000',
@@ -62,13 +72,14 @@
     FONT[ch] = rows;
   }
 
-  // Bring any text down to what the C64 can show: upper case ASCII + our graphics.
-  function fold(s) {
+  // Bring any text down to what the C64 can show: ASCII + our graphics,
+  // upper case unless the caller wants the lower case set.
+  function fold(s, keepCase = false) {
     return String(s)
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[“”]/g, '"').replace(/[‘’]/g, "'")
       .replace(/[–—‐]/g, '-').replace(/…/g, '...')
-      .toUpperCase();
+      [keepCase ? 'toString' : 'toUpperCase']();
   }
 
   class Screen {
