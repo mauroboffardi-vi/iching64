@@ -99,6 +99,11 @@
     });
   }
 
+  // Google Analytics event, if the tag loaded (ad blockers often stop it).
+  function track(name) {
+    if (typeof window.gtag === 'function') window.gtag('event', name);
+  }
+
   // ---------- screen helpers ----------
 
   function titleBar(text, color = C.CYAN) {
@@ -211,6 +216,7 @@
 
   async function cast(question) {
     const reading = { question, values: [] };
+    track('cast');
     drawHeader(reading);
     const spinner = ['│', '╱', '─', '╲'];
     for (let i = 0; i < 6; i++) {
@@ -418,8 +424,9 @@
       const bare = cmd.replace(/\s+/g, '');
       if (!bare) continue;
       if (bare === 'RUN') return 'run';
-      if (bare === 'SYS64738') return 'reset';
+      if (bare === 'SYS64738') { track('sys64738'); return 'reset'; }
       if (bare === 'LIST') {
+        track('list');
         for (const l of LISTING) await println(l);
       } else if (bare === 'NEW' || bare === 'CLR') {
         // nothing to forget
