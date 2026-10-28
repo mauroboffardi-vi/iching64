@@ -20,6 +20,11 @@
     uniform vec2 texel;        // size of one source pixel in uv units
     uniform float rows;        // source scanline count
     uniform float scanAmount;  // 0 when the display is too small for scanlines to read
+    uniform float roll;        // power-on: vertical hold lost, picture rolls by this much
+    uniform float rolling;     // 1 while rolling, shows the black blanking bar between frames
+    uniform float jitter;      // power-on: horizontal wobble
+    uniform float bright;      // power-on: tube brightness
+    uniform float time;
     varying vec2 uv;
 
     void main() {
@@ -32,10 +37,17 @@
       float edge = length(max(q, 0.0)) - 0.035;
       float mask = 1.0 - smoothstep(-0.003, 0.002, edge);
 
+      // lost vertical sync: the frame wraps around, a dark blanking bar between copies
+      vec2 s = p;
+      s.x += jitter * sin(s.y * 90.0 + time * 40.0);
+      s.y = fract(s.y + roll);
+      float blank = rolling * (1.0 - step(0.045, s.y));
+
       // a touch of horizontal phosphor bleed
-      vec3 col = texture2D(frame, p).rgb * 0.7
-               + texture2D(frame, p + vec2(texel.x * 0.6, 0.0)).rgb * 0.15
-               + texture2D(frame, p - vec2(texel.x * 0.6, 0.0)).rgb * 0.15;
+      vec3 col = texture2D(frame, s).rgb * 0.7
+               + texture2D(frame, s + vec2(texel.x * 0.6, 0.0)).rgb * 0.15
+               + texture2D(frame, s - vec2(texel.x * 0.6, 0.0)).rgb * 0.15;
+      col *= (1.0 - blank) * bright;
 
       float scan = 0.5 + 0.5 * cos(6.2831853 * p.y * rows);
       col *= 1.0 - scanAmount * scan;
@@ -60,6 +72,7 @@
       this.bigCtx = this.big.getContext('2d');
       this.bigCtx.imageSmoothingEnabled = false;
       this.gl = null;
+      this.fx = { roll: 0, rolling: 0, jitter: 0, bright: 1 };   // power-on effect state
       try { this.initGL(); } catch (e) { this.gl = null; }
       if (!this.gl) {
         this.ctx2d = display.getContext('2d');
@@ -93,6 +106,11 @@
         texel: gl.getUniformLocation(prog, 'texel'),
         rows: gl.getUniformLocation(prog, 'rows'),
         scanAmount: gl.getUniformLocation(prog, 'scanAmount'),
+        roll: gl.getUniformLocation(prog, 'roll'),
+        rolling: gl.getUniformLocation(prog, 'rolling'),
+        jitter: gl.getUniformLocation(prog, 'jitter'),
+        bright: gl.getUniformLocation(prog, 'bright'),
+        time: gl.getUniformLocation(prog, 'time'),
       };
       gl.uniform2f(this.u.texel, 1 / this.source.width, 1 / this.source.height);
       gl.uniform1f(this.u.rows, this.source.height);
@@ -121,6 +139,12 @@
         const gl = this.gl;
         this.bigCtx.drawImage(this.source, 0, 0, this.big.width, this.big.height);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, this.big);
+        const fx = this.fx;
+        gl.uniform1f(this.u.roll, fx.roll);
+        gl.uniform1f(this.u.rolling, fx.rolling);
+        gl.uniform1f(this.u.jitter, fx.jitter);
+        gl.uniform1f(this.u.bright, fx.bright);
+        gl.uniform1f(this.u.time, performance.now() / 1000);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       } else {
         this.ctx2d.drawImage(this.source, 0, 0, this.display.width, this.display.height);

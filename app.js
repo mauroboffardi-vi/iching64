@@ -348,11 +348,31 @@
 
   // ---------- the machine around it ----------
 
-  async function boot() {
+  // Switching the TV on: a flash, then the picture rolls until vertical sync locks.
+  async function powerOn() {
+    const start = performance.now(), duration = 1500;
+    for (;;) {
+      const t = hurry ? 1 : Math.min(1, (performance.now() - start) / duration);
+      const u = (t - 0.1) / 0.7;                     // rolling phase, 0..1
+      const rolling = u > 0 && u < 1;
+      crt.fx = {
+        bright: t < 0.08 ? 0 : 1 + 0.9 * Math.exp(-(t - 0.08) * 14),
+        roll: rolling ? 2.6 * (1 - u) * (1 - u) : 0,
+        rolling: rolling ? 1 : 0,
+        jitter: t < 1 ? 0.008 * (1 - t) * Math.random() : 0,
+      };
+      scr.dirty = true;
+      if (t >= 1) return;
+      await frame();
+    }
+  }
+
+  async function boot(cold = false) {
     hurry = false;
     scr.border = C.LBLUE; scr.background = C.BLUE; scr.color = C.LBLUE;
     scr.cursorVisible = false;
     scr.cls();
+    if (cold) await powerOn();
     await sleep(600);
     scr.text(4, 1, '**** COMMODORE 64 BASIC V2 ****');
     scr.text(1, 3, '64K RAM SYSTEM  38911 BASIC BYTES FREE');
@@ -418,7 +438,7 @@
   }
 
   async function main() {
-    await boot();
+    await boot(true);
     for (;;) {
       await program();
       if (await basic() === 'reset') await boot();
