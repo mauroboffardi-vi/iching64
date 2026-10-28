@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "iching64",
+      "url": "http://localhost:8064",
+      "port": 8064
+    }
+  ]
+}
